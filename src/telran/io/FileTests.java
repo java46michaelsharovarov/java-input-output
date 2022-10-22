@@ -5,6 +5,7 @@ import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.*;
+import java.util.Arrays;
 class FileTests {
 	
 	private static final String INDENT = "    ";
@@ -25,7 +26,7 @@ class FileTests {
 	
 	@Test
 	void printDirectoryContent() throws IOException {
-		printDirectory("..", 1);
+		printDirectory("/", 3);
 	}
 
 	/**
@@ -39,19 +40,15 @@ class FileTests {
 	 */
 	private void printDirectory(String pathName, int level) {
 		File file = new File(pathName);
-		printDirectoryName(file);
-		printNodeWithLevels(file, level, INDENT);
-	}
-
-	private void printDirectoryName(File file) {
-		String path = file.getPath();
-		String absPath = file.getAbsolutePath();
-		if(path.matches("(.+\\\\\\.)|(\\.)")) {
-			absPath = absPath.substring(0, absPath.length() - 1);
-		} else if(path.matches("(.+\\\\\\.\\.)|(\\.\\.)")) {
-			absPath = absPath.replaceAll("[^\\\\.]+\\\\\\.\\.$", "");
+		if(!file.exists() || file.isFile()) {
+			throw new RuntimeException(String.format("%s is not directory", pathName));
 		}
-		System.out.printf("%s\n >>>\n", absPath);
+		try {
+			System.out.println(file.getCanonicalPath() + "\n >>>");
+		} catch (IOException e) {
+			throw new RuntimeException(e.getMessage());
+		}
+		printNodeWithLevels(file, level, INDENT);
 	}
 		
 	private void printNodeWithLevels(File file, int level, String indent) {
@@ -59,26 +56,16 @@ class FileTests {
 			return;
 		}
 		File[] fileList = file.listFiles();
-		if(fileList == null || fileList.length == 0) {
-			return;
-		}
-		for (int i = 0; i < fileList.length; i++) {
-			System.out.printf(indent);
-			printNode(fileList[i]);
-			printNodeWithLevels(getNextNode(file.getPath(), fileList[i]), level - 1, indent.concat(INDENT));
-		}		
-	}
-
-	private File getNextNode(String pathName, File file) {
-		return new File(pathName.concat("\\").concat(file.getName()));
+		if(file.isDirectory() && fileList != null) {
+			Arrays.stream(fileList).forEach(f -> {
+				System.out.printf("%s<%s> type = %s\n", indent, f.getName(), getTypeName(f));
+				printNodeWithLevels(f, level - 1, indent.concat(INDENT));
+			});		
+		}				
 	}
 
 	private String getTypeName(File file) {
 		return file.isDirectory() ? "dir" : "file";
 	}	
-
-	private void printNode(File file) {
-		System.out.printf("<%s> type = %s\n", file.getName(), getTypeName(file));
-	}
 
 }
