@@ -22,19 +22,19 @@ public class Logger {
 	}
 	
 	public void warn(String message) {
-		if(level != Level.ERROR) {
+		if(level.compareTo(Level.ERROR) < 0) {
 			publish(Level.WARN, message);
 		}
 	}
 	
 	public void info(String message) {
-		if(level != Level.ERROR && level != Level.WARN) {
+		if(level.compareTo(Level.WARN) < 0) {
 			publish(Level.INFO, message);
 		}
 	}
 	
 	public void debug(String message) {
-		if(level == Level.TRACE || level == Level.DEBUG) {
+		if(level.compareTo(Level.DEBUG) <= 0) {
 			publish(Level.DEBUG, message);
 		}
 	}
