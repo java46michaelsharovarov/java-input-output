@@ -1,6 +1,7 @@
 package telran.util.tests;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static telran.util.Level.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -8,7 +9,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,12 +23,6 @@ class LoggerTests {
 	private static final String NAME = "logger.log";
 	private File file = new File(NAME);
 	private Logger logger;
-	HashSet<String> set;
-	final Level TRACE = Level.TRACE;
-	final Level DEBUG = Level.DEBUG;
-	final Level INFO = Level.INFO;
-	final Level WARN = Level.WARN;
-	final Level ERROR = Level.ERROR;
 
 	@BeforeEach
 	void setUp() throws Exception {
@@ -35,57 +31,32 @@ class LoggerTests {
 
 	@Test
 	void testError() {
-		runLogger(ERROR);
-		set = getLogsLevels();
-		assertTrue(set.contains(ERROR.name()));
-		assertFalse(set.contains(TRACE.name()));
-		assertFalse(set.contains(DEBUG.name()));
-		assertFalse(set.contains(INFO.name()));
-		assertFalse(set.contains(WARN.name()));
+		runLogger(ERROR); 
+		assertEquals(getLogsLevels(), Set.of(ERROR));
 	}
 
 	@Test
 	void testWarn() {
 		runLogger(WARN);
-		set = getLogsLevels();
-		assertTrue(set.contains(ERROR.name()));
-		assertTrue(set.contains(WARN.name()));
-		assertFalse(set.contains(TRACE.name()));
-		assertFalse(set.contains(DEBUG.name()));
-		assertFalse(set.contains(INFO.name()));
+		assertEquals(getLogsLevels(), Set.of(ERROR, WARN));
 	}
 
 	@Test
 	void testInfo() {
 		runLogger(INFO);
-		set = getLogsLevels();
-		assertTrue(set.contains(ERROR.name()));
-		assertTrue(set.contains(WARN.name()));
-		assertTrue(set.contains(INFO.name()));
-		assertFalse(set.contains(TRACE.name()));
-		assertFalse(set.contains(DEBUG.name()));
+		assertEquals(getLogsLevels(), Set.of(ERROR, WARN, INFO));
 	}
 
 	@Test
 	void testDebug() {
 		runLogger(DEBUG);
-		set = getLogsLevels();
-		assertTrue(set.contains(ERROR.name()));
-		assertTrue(set.contains(WARN.name()));
-		assertTrue(set.contains(INFO.name()));
-		assertTrue(set.contains(DEBUG.name()));
-		assertFalse(set.contains(TRACE.name()));
+		assertEquals(getLogsLevels(), Set.of(ERROR, WARN, INFO, DEBUG));
 	}
 
 	@Test
 	void testTrace() {
 		runLogger(TRACE);
-		set = getLogsLevels();
-		assertTrue(set.contains(ERROR.name()));
-		assertTrue(set.contains(WARN.name()));
-		assertTrue(set.contains(INFO.name()));
-		assertTrue(set.contains(DEBUG.name()));
-		assertTrue(set.contains(TRACE.name()));
+		assertEquals(getLogsLevels(), Set.of(ERROR, WARN, INFO, DEBUG, TRACE));
 	}
 	
 	@Test
@@ -105,16 +76,17 @@ class LoggerTests {
 		}
 	}
 
-	private HashSet<String> getLogsLevels() {
-		HashSet<String> setOfLevels = new HashSet<>();
+	private Set<Level> getLogsLevels() {
 		try (BufferedReader reader = new BufferedReader(new FileReader(NAME))) {			
-			reader.lines().forEach(s -> setOfLevels.add(s.split(" ")[1]));
+			return reader.lines()
+			.map(s -> Level.valueOf(s.split(" ")[1]))
+			.collect(Collectors.toSet());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return setOfLevels;
+		return null;
 	}
 
 	private void runAllMethods() {

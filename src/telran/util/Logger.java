@@ -22,13 +22,13 @@ public class Logger {
 	}
 	
 	public void warn(String message) {
-		if(level.compareTo(Level.ERROR) < 0) {
+		if(level.compareTo(Level.WARN) <= 0) {
 			publish(Level.WARN, message);
 		}
 	}
 	
 	public void info(String message) {
-		if(level.compareTo(Level.WARN) < 0) {
+		if(level.compareTo(Level.INFO) <= 0) {
 			publish(Level.INFO, message);
 		}
 	}
@@ -40,7 +40,7 @@ public class Logger {
 	}
 	
 	public void trace(String message) {
-		if(level == Level.TRACE) {
+		if(level.compareTo(Level.TRACE) == 0) {
 			publish(Level.TRACE, message);
 		}
 	}

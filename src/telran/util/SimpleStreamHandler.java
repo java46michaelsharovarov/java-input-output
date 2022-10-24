@@ -19,9 +19,7 @@ public class SimpleStreamHandler implements Handler {
 	}
 
 	private LocalDateTime getTime(LoggerRecord loggerRecord) {
-		ZoneId z = ZoneId.of(loggerRecord.zoneId);
-		LocalDateTime time = loggerRecord.timestamp.atZone(z).toLocalDateTime();
-		return time;
+		return LocalDateTime.ofInstant(loggerRecord.timestamp, ZoneId.of(loggerRecord.zoneId));
 	}
 
 }
