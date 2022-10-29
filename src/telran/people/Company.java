@@ -10,5 +10,5 @@ public interface Company extends Serializable{
 	void save(String filePath) throws Exception; //serialization
 	Iterable<Employee> getEmployeesDepartment(String department); //returns employees of a given department
 	Iterable<Employee> getEmployeesSalary(int salaryFrom, int salaryTo); //returns employees with salary in range [from, to]
-
+	
 }
