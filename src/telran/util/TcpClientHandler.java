@@ -1,44 +1,42 @@
 package telran.util;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-public class TcpClientHandler implements Handler {
+import telran.net.ServerLogAppl;
 
-	private static final String RESPONSE_LOG = "response.log";
-	Socket socket; 
-	PrintStream output; 
+public class TcpClientHandler implements Handler {
+	
+	Socket socket;
+	PrintStream stream;
 	BufferedReader input;
 	
-	public TcpClientHandler(String host, int port) {
+	public TcpClientHandler(String hostName, int port) {		
 		try {
-			this.socket = new Socket(host, port);
-			this.output = new PrintStream(socket.getOutputStream());
-			this.input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		} catch (Exception e) {
-			e.printStackTrace();
+			socket = new Socket(hostName, port);
+			stream = new PrintStream(socket.getOutputStream());
+			input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		} catch (IOException e) {
+			throw new RuntimeException(e.toString());
 		}
-	}
+	}	
 
 	@Override
 	public void publish(LoggerRecord loggerRecord) {
-		String log = String.format("log#%s %s %s %s", getTime(loggerRecord), 
-				loggerRecord.level, loggerRecord.loggerName, loggerRecord.message);
-		this.output.println(log);
-		try(PrintStream printStream = new PrintStream(RESPONSE_LOG)) {
-			printStream.println(this.input.readLine());
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	private LocalDateTime getTime(LoggerRecord loggerRecord) {
-		return LocalDateTime.ofInstant(loggerRecord.timestamp, ZoneId.of(loggerRecord.zoneId));
+		LocalDateTime ldt = LocalDateTime.ofInstant(loggerRecord.timestamp,
+				ZoneId.of(loggerRecord.zoneId));
+		String message = String.format("%s %s %s %s", ldt, loggerRecord.level,
+				loggerRecord.loggerName, loggerRecord.message);
+		stream.println(ServerLogAppl.LOG_TYPE + "#" + message);
+		try {
+			String response = input.readLine();
+			if (!response.equals(ServerLogAppl.OK)) {
+				throw new RuntimeException("Response from Logger Server is " + response);
+			}
+		} catch (IOException e) {
+			new RuntimeException(e.getMessage());
+		}		
 	}
 	
 	@Override
@@ -46,17 +44,8 @@ public class TcpClientHandler implements Handler {
 		try {
 			socket.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException("not closed " + e.getMessage());
 		}
-	}
-
-	public void getCount(String string) {
-		this.output.println(String.format("counter#%s", string));	
-		try(PrintStream printStream = new PrintStream(RESPONSE_LOG)) {
-			printStream.println(this.input.readLine());
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-	}
+	}	
 
 }

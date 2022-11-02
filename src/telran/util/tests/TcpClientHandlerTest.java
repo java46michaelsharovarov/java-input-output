@@ -1,93 +1,98 @@
 package telran.util.tests;
+import java.net.*;
+import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static telran.util.Level.TRACE;
-
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import telran.net.ServerLogAppl;
+import telran.util.Handler;
+import telran.util.Level;
 import telran.util.Logger;
 import telran.util.TcpClientHandler;
-import org.junit.jupiter.api.MethodOrderer;
+
+import java.io.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TcpClientHandlerTest {
 	
-	private static final String HOST = "localhost";
-	private static final int PORT = 3000;
-	private static Logger logger;
-	private static TcpClientHandler handler;
-	private static BufferedReader reader;
-	
+	private static final int N_ERRORS = 1;
+	private static final int N_WARNS = 2;
+	private static final int N_INFOS = 3;
+	private static final int N_DEBUGS = 4;
+	private static final int N_TRACES = 5;
+	static Handler logHandler;
+	static Logger logger;
+	static Socket socket;
+	static PrintStream stream;
+	static BufferedReader reader;
 	
 	@BeforeAll
-	static void createLogger() {
-		handler = new TcpClientHandler(HOST, PORT);
-		logger = new Logger(handler, "my_logger");
+	static void createLogger() throws Exception {
+		logHandler = new TcpClientHandler("localhost", ServerLogAppl.PORT);
+		logger = new Logger(logHandler, "test-tcp-logger");
+		logger.setLevel(Level.TRACE);
+		socket = new Socket("localhost", ServerLogAppl.PORT);
+		stream = new PrintStream(socket.getOutputStream());
+		reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 	}
 	
-	@BeforeEach
-	void setUp() {
-		try {
-			reader = new BufferedReader(new FileReader("response.log"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+	@Order(1)
+	@Test
+	void sending() {
+		sendMessage(N_ERRORS, i -> logger.error("message" + i));
+		sendMessage(N_WARNS, i -> logger.warn("message" + i));
+		sendMessage(N_INFOS, i -> logger.info("message" + i));
+		sendMessage(N_DEBUGS, i -> logger.debug("message" + i));
+		sendMessage(N_TRACES, i -> logger.trace("message" + i));
+		logHandler.close();		
 	}
 	
-	@AfterEach
-	void closeReader() {
-		try {
-			reader.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	private void sendMessage(int nSendings, IntConsumer consumer) {
+		IntStream.range(0, nSendings).forEach(consumer);
+	}
+	
+	@Test
+	void counterErrorTest() throws Exception {
+		runCounterTest("ERROR", N_ERRORS);
+	}
+	
+	@Test
+	void counterWarnTest() throws Exception {
+		runCounterTest("WARN", N_WARNS);
+	}
+	
+	private void runCounterTest(String level, int nLogs) throws Exception{
+		stream.println("counter#" + level);
+		int actual = Integer.parseInt(reader.readLine());
+		assertEquals(nLogs , actual);		
+	}
+	
+	@Test
+	void counterInfoTest() throws Exception {
+		runCounterTest("INFO", N_INFOS);
+	}
+	
+	@Test
+	void counterDebugTest() throws Exception {
+		runCounterTest("DEBUG", N_DEBUGS);
+	}
+	
+	@Test
+	void counterTraceTest() throws Exception {
+		runCounterTest("TRACE", N_TRACES);
 	}
 	
 	@AfterAll
-	static void closeLogger() {		
-		handler.close();
-	}
-	
-	@Test
-	@Order(1)
-	void logErrorRequestTest() throws Exception{
-		logger.setLevel(TRACE);
-		logger.error("ERROR!!!");
-		assertEquals("OK", reader.readLine());		
-	}	
-	
-	
-	@Test
-	@Order(2)
-	void errorRequestTest() throws Exception{
-		handler.getCount("error");
-		assertEquals("1", reader.readLine());
-	}
-	
-	@Test
-	@Order(3)
-	void logDebugRequestTest() throws Exception{
-		logger.debug("DEBUG!!!");
-		logger.debug("DEBUG!!!");
-		assertEquals("OK", reader.readLine());		
-	}
-	
-	@Test
-	@Order(4)
-	void debugRequestTest() throws Exception{
-		handler.getCount("debug");
-		assertEquals("2", reader.readLine());
+	static void closing () throws IOException {
+		socket.close();
 	}
 
 }
